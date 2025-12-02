@@ -1,0 +1,10 @@
+# Supabase
+
+# Secrets - never commit these
+.env
+.env.local
+.env.*.local
+
+# Local Supabase
+.branches
+.temp
