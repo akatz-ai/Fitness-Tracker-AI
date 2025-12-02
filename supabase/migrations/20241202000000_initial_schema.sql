@@ -1,12 +1,9 @@
 -- Fitness Tracker AI Database Schema
 -- Run this in your Supabase SQL Editor
 
--- Enable UUID extension
-create extension if not exists "uuid-ossp";
-
 -- Workouts table
 create table if not exists public.workouts (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   user_id text not null,
   name text not null,
   tag text not null default 'Lifting',
@@ -17,7 +14,7 @@ create table if not exists public.workouts (
 
 -- Exercises table
 create table if not exists public.exercises (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   workout_id uuid not null references public.workouts(id) on delete cascade,
   name text not null,
   sets integer not null default 3,
