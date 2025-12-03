@@ -63,6 +63,28 @@ export default function DashboardPage() {
     router.push(`/workout/${workout.id}`)
   }
 
+  const handleDeleteWorkout = async (workout: Workout) => {
+    if (!confirm(`Delete "${workout.name}"? This cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/workouts/${workout.id}`, {
+        method: 'DELETE',
+      })
+
+      if (res.ok) {
+        setWorkouts((prev) => prev.filter((w) => w.id !== workout.id))
+        // Refresh metrics after deletion
+        fetchMetrics()
+      } else {
+        console.error('Failed to delete workout')
+      }
+    } catch (error) {
+      console.error('Error deleting workout:', error)
+    }
+  }
+
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -135,6 +157,7 @@ export default function DashboardPage() {
                 key={workout.id}
                 workout={workout}
                 onClick={() => router.push(`/workout/${workout.id}`)}
+                onDelete={handleDeleteWorkout}
               />
             ))}
           </div>
