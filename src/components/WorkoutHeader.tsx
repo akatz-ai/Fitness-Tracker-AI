@@ -25,7 +25,9 @@ export function WorkoutHeader({ workout, onUpdate, onDelete, onBack }: WorkoutHe
   const [showTagMenu, setShowTagMenu] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
 
-  const formattedDate = new Date(workout.date).toLocaleDateString('en-US', {
+  // Parse date without timezone conversion (date string is YYYY-MM-DD)
+  const [year, month, day] = workout.date.split('-').map(Number)
+  const formattedDate = new Date(year, month - 1, day).toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
