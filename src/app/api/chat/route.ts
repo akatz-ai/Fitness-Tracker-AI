@@ -187,7 +187,9 @@ export async function POST(req: NextRequest) {
           .select()
           .single()
 
-        if (!error && data) {
+        if (error) {
+          console.error('Error adding exercise:', error, { action })
+        } else if (data) {
           updatedExercises.push(data)
         }
       } else if (action.type === 'update' && action.exercise) {

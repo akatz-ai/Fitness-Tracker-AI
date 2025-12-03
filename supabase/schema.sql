@@ -19,7 +19,7 @@ create table if not exists public.exercises (
   name text not null,
   sets integer default 3,
   reps integer default 8,
-  weight integer,
+  weight numeric(10,2),
   unit text not null default 'lbs' check (unit in ('lbs', 'kg', 'min', 'sec', 'miles', 'km', 'cal', 'bodyweight')),
   "order" integer not null default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
