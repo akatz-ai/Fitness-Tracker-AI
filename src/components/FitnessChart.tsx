@@ -36,26 +36,19 @@ export function FitnessChart({ metrics, loading }: FitnessChartProps) {
     return () => clearInterval(timer)
   }, [metrics])
 
-  // Animate the bars
+  // Calculate bar heights (no animation state - use CSS instead)
   useEffect(() => {
     if (!metrics?.weeklyData) return
 
     const maxScore = Math.max(...metrics.weeklyData.map((d) => d.score), 1)
     const targetHeights = metrics.weeklyData.map((d) => (d.score / maxScore) * 100)
 
-    // Start with zero heights
-    setAnimatedBars(new Array(targetHeights.length).fill(0))
+    // Small delay to trigger CSS animation after mount
+    const timer = setTimeout(() => {
+      setAnimatedBars(targetHeights)
+    }, 50)
 
-    // Animate each bar with stagger
-    targetHeights.forEach((height, index) => {
-      setTimeout(() => {
-        setAnimatedBars((prev) => {
-          const next = [...prev]
-          next[index] = height
-          return next
-        })
-      }, 100 * index)
-    })
+    return () => clearTimeout(timer)
   }, [metrics])
 
   if (loading) {
@@ -140,42 +133,50 @@ export function FitnessChart({ metrics, loading }: FitnessChartProps) {
           </div>
 
           {/* Stats pills */}
-          <div className="flex gap-2">
-            <div className="bg-dark-bg/50 backdrop-blur-sm border border-dark-border rounded-full px-3 py-1.5">
-              <span className="text-xs text-gray-400">Streak</span>
-              <span className="ml-2 text-sm font-semibold text-orange-400">{metrics.streak} 🔥</span>
+          <div className="flex gap-2 shrink-0">
+            <div className="bg-dark-bg/50 backdrop-blur-sm border border-dark-border rounded-full px-2 sm:px-3 py-1.5 flex items-center whitespace-nowrap">
+              <span className="text-xs text-gray-400 hidden sm:inline">Streak</span>
+              <span className="text-sm font-semibold text-orange-400 flex items-center gap-1">
+                <span className="sm:ml-2">{metrics.streak}</span>
+                <span className="text-xs sm:text-sm">🔥</span>
+              </span>
             </div>
-            <div className="bg-dark-bg/50 backdrop-blur-sm border border-dark-border rounded-full px-3 py-1.5">
-              <span className="text-xs text-gray-400">This week</span>
-              <span className="ml-2 text-sm font-semibold text-blue-400">{metrics.weeklyWorkouts}</span>
+            <div className="bg-dark-bg/50 backdrop-blur-sm border border-dark-border rounded-full px-2 sm:px-3 py-1.5 flex items-center whitespace-nowrap">
+              <span className="text-xs text-gray-400 hidden sm:inline">This week</span>
+              <span className="sm:ml-2 text-sm font-semibold text-blue-400">{metrics.weeklyWorkouts}</span>
             </div>
           </div>
         </div>
 
         {/* Chart */}
-        <div className="flex items-end justify-between gap-2 h-24 mt-4">
+        <div className="flex items-end justify-between gap-1 sm:gap-2 h-24 mt-4">
           {metrics.weeklyData.map((day, index) => {
             const isToday = index === metrics.weeklyData.length - 1
             const height = animatedBars[index] || 0
             const dayLabel = new Date(day.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' })
 
             return (
-              <div key={day.date} className="flex-1 flex flex-col items-center gap-2">
+              <div key={day.date} className="flex-1 flex flex-col items-center gap-2 min-w-0">
                 <div className="relative w-full h-20 flex items-end justify-center">
-                  {/* Bar */}
-                  <div
-                    className={`w-full max-w-[40px] rounded-t-lg transition-all duration-700 ease-out ${
-                      isToday
-                        ? 'bg-gradient-to-t from-blue-600 to-blue-400'
-                        : day.workouts > 0
-                        ? 'bg-gradient-to-t from-blue-600/60 to-blue-400/60'
-                        : 'bg-dark-hover'
-                    }`}
-                    style={{
-                      height: `${Math.max(height, 8)}%`,
-                      boxShadow: isToday ? '0 0 20px rgba(59, 130, 246, 0.3)' : 'none'
-                    }}
-                  />
+                  {/* Bar container - fixed height to prevent layout shift */}
+                  <div className="w-full max-w-[40px] h-full flex items-end justify-center">
+                    <div
+                      className={`w-full rounded-t-lg ${
+                        isToday
+                          ? 'bg-gradient-to-t from-blue-600 to-blue-400'
+                          : day.workouts > 0
+                          ? 'bg-gradient-to-t from-blue-600/60 to-blue-400/60'
+                          : 'bg-dark-hover'
+                      }`}
+                      style={{
+                        height: `${Math.max(height, 8)}%`,
+                        boxShadow: isToday ? '0 0 20px rgba(59, 130, 246, 0.3)' : 'none',
+                        transition: 'height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        transitionDelay: `${index * 80}ms`,
+                        willChange: 'height'
+                      }}
+                    />
+                  </div>
                   {/* Workout count indicator */}
                   {day.workouts > 0 && (
                     <div
@@ -183,7 +184,7 @@ export function FitnessChart({ metrics, loading }: FitnessChartProps) {
                       style={{
                         opacity: height > 0 ? 1 : 0,
                         transition: 'opacity 0.3s ease-out',
-                        transitionDelay: `${index * 100 + 500}ms`
+                        transitionDelay: `${index * 80 + 400}ms`
                       }}
                     >
                       {day.workouts}
