@@ -1,3 +1,5 @@
+export type ExerciseUnit = 'lbs' | 'kg' | 'min' | 'sec' | 'miles' | 'km' | 'cal' | 'bodyweight'
+
 export interface Database {
   public: {
     Tables: {
@@ -35,9 +37,10 @@ export interface Database {
           id: string
           workout_id: string
           name: string
-          sets: number
-          reps: number
+          sets: number | null
+          reps: number | null
           weight: number | null
+          unit: ExerciseUnit
           order: number
           created_at: string
         }
@@ -45,9 +48,10 @@ export interface Database {
           id?: string
           workout_id: string
           name: string
-          sets: number
-          reps: number
+          sets?: number | null
+          reps?: number | null
           weight?: number | null
+          unit?: ExerciseUnit
           order: number
           created_at?: string
         }
@@ -55,9 +59,10 @@ export interface Database {
           id?: string
           workout_id?: string
           name?: string
-          sets?: number
-          reps?: number
+          sets?: number | null
+          reps?: number | null
           weight?: number | null
+          unit?: ExerciseUnit
           order?: number
           created_at?: string
         }
@@ -73,3 +78,18 @@ export type WorkoutUpdate = Database['public']['Tables']['workouts']['Update']
 export type Exercise = Database['public']['Tables']['exercises']['Row']
 export type ExerciseInsert = Database['public']['Tables']['exercises']['Insert']
 export type ExerciseUpdate = Database['public']['Tables']['exercises']['Update']
+
+// Fitness metrics types
+export interface FitnessMetrics {
+  currentScore: number
+  previousScore: number
+  weeklyWorkouts: number
+  streak: number
+  totalVolume: number
+  trend: 'up' | 'down' | 'stable'
+  weeklyData: {
+    date: string
+    score: number
+    workouts: number
+  }[]
+}

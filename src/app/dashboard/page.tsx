@@ -3,16 +3,19 @@
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Workout } from '@/types/database'
+import { Workout, FitnessMetrics } from '@/types/database'
 import { WorkoutCard } from '@/components/WorkoutCard'
 import { NewWorkoutModal } from '@/components/NewWorkoutModal'
+import { FitnessChart } from '@/components/FitnessChart'
 import Image from 'next/image'
 
 export default function DashboardPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [workouts, setWorkouts] = useState<Workout[]>([])
+  const [metrics, setMetrics] = useState<FitnessMetrics | null>(null)
   const [loading, setLoading] = useState(true)
+  const [metricsLoading, setMetricsLoading] = useState(true)
   const [showNewWorkoutModal, setShowNewWorkoutModal] = useState(false)
 
   useEffect(() => {
@@ -24,6 +27,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (session?.user?.id) {
       fetchWorkouts()
+      fetchMetrics()
     }
   }, [session])
 
@@ -38,6 +42,20 @@ export default function DashboardPage() {
       console.error('Error fetching workouts:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchMetrics = async () => {
+    try {
+      const res = await fetch('/api/metrics')
+      if (res.ok) {
+        const data = await res.json()
+        setMetrics(data)
+      }
+    } catch (error) {
+      console.error('Error fetching metrics:', error)
+    } finally {
+      setMetricsLoading(false)
     }
   }
 
@@ -85,6 +103,9 @@ export default function DashboardPage() {
 
       {/* Main content */}
       <main className="max-w-2xl mx-auto px-4 py-6">
+        {/* Fitness Progress Chart */}
+        <FitnessChart metrics={metrics} loading={metricsLoading} />
+
         {/* New Workout Button */}
         <button
           onClick={() => setShowNewWorkoutModal(true)}

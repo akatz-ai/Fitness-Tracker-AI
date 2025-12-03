@@ -20,6 +20,7 @@ export async function GET() {
     .select('*')
     .eq('user_id', session.user.id)
     .order('date', { ascending: false })
+    .order('created_at', { ascending: false })
 
   if (error) {
     console.error('Error fetching workouts:', error)

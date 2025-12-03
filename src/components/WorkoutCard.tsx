@@ -16,7 +16,9 @@ const tagColors: Record<string, string> = {
 }
 
 export function WorkoutCard({ workout, onClick }: WorkoutCardProps) {
-  const formattedDate = new Date(workout.date).toLocaleDateString('en-US', {
+  // Parse date without timezone conversion (date string is YYYY-MM-DD)
+  const [year, month, day] = workout.date.split('-').map(Number)
+  const formattedDate = new Date(year, month - 1, day).toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
