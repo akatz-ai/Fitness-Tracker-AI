@@ -6,6 +6,20 @@ import { FitnessMetrics } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
 
+// Helper to get date string in local timezone (YYYY-MM-DD)
+function getLocalDateString(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// Helper to parse YYYY-MM-DD without timezone issues
+function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
 export async function GET() {
   const session = await getServerSession(authOptions)
 
@@ -16,9 +30,10 @@ export async function GET() {
   const supabase = createServerClient()
 
   // Get workouts from the last 14 days
+  const today = new Date()
   const twoWeeksAgo = new Date()
   twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
-  const twoWeeksAgoStr = twoWeeksAgo.toISOString().split('T')[0]
+  const twoWeeksAgoStr = getLocalDateString(twoWeeksAgo)
 
   const { data: workouts, error: workoutsError } = await supabase
     .from('workouts')
@@ -33,7 +48,27 @@ export async function GET() {
   }
 
   if (!workouts || workouts.length === 0) {
-    return NextResponse.json(null)
+    // Return empty metrics with zero values so chart still shows
+    const weeklyData: FitnessMetrics['weeklyData'] = []
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date()
+      date.setDate(date.getDate() - i)
+      weeklyData.push({
+        date: getLocalDateString(date),
+        score: 0,
+        workouts: 0,
+      })
+    }
+
+    return NextResponse.json({
+      currentScore: 0,
+      previousScore: 0,
+      weeklyWorkouts: 0,
+      streak: 0,
+      totalVolume: 0,
+      trend: 'stable',
+      weeklyData,
+    } as FitnessMetrics)
   }
 
   // Get all exercises for these workouts
@@ -53,15 +88,16 @@ export async function GET() {
     return acc
   }, {} as Record<string, typeof exercises>)
 
-  // Calculate metrics
-  const today = new Date()
+  // Calculate metrics using local dates
   const oneWeekAgo = new Date()
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+  const oneWeekAgoStr = getLocalDateString(oneWeekAgo)
+  const twoWeeksAgoStrForCompare = getLocalDateString(twoWeeksAgo)
 
   // Split workouts into this week and last week
-  const thisWeekWorkouts = workouts.filter((w) => new Date(w.date) >= oneWeekAgo)
+  const thisWeekWorkouts = workouts.filter((w) => w.date >= oneWeekAgoStr)
   const lastWeekWorkouts = workouts.filter(
-    (w) => new Date(w.date) < oneWeekAgo && new Date(w.date) >= twoWeeksAgo
+    (w) => w.date < oneWeekAgoStr && w.date >= twoWeeksAgoStrForCompare
   )
 
   // Calculate volume (sets × reps × weight) for each period
@@ -100,20 +136,22 @@ export async function GET() {
 
   // Calculate streak
   let streak = 0
-  const sortedWorkouts = [...workouts].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  const sortedWorkouts = [...workouts].sort((a, b) => b.date.localeCompare(a.date))
 
   if (sortedWorkouts.length > 0) {
-    const todayStr = today.toISOString().split('T')[0]
-    const yesterdayStr = new Date(today.getTime() - 86400000).toISOString().split('T')[0]
+    const todayStr = getLocalDateString(today)
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayStr = getLocalDateString(yesterday)
 
     // Check if most recent workout is today or yesterday
     const mostRecentDate = sortedWorkouts[0].date
     if (mostRecentDate === todayStr || mostRecentDate === yesterdayStr) {
       // Count consecutive days with workouts
       const workoutDates = new Set(sortedWorkouts.map((w) => w.date))
-      let checkDate = new Date(mostRecentDate)
+      let checkDate = parseLocalDate(mostRecentDate)
 
-      while (workoutDates.has(checkDate.toISOString().split('T')[0])) {
+      while (workoutDates.has(getLocalDateString(checkDate))) {
         streak++
         checkDate.setDate(checkDate.getDate() - 1)
       }
@@ -125,7 +163,7 @@ export async function GET() {
   for (let i = 6; i >= 0; i--) {
     const date = new Date()
     date.setDate(date.getDate() - i)
-    const dateStr = date.toISOString().split('T')[0]
+    const dateStr = getLocalDateString(date)
 
     const dayWorkouts = workouts.filter((w) => w.date === dateStr)
     let dayVolume = 0
